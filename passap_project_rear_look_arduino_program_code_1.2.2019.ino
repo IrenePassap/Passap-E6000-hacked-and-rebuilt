@@ -1,9 +1,14 @@
+// Passap E6000 Project
+// Author: IrenePassap
+// version 1.2.2019
+
+// with English and German comments
+
 
 #include "CmdMessenger.h"
 #include "Arduino.h" 
 
 #define Serial SerialUSB
-
 
                                                                                                                                                                                                            
 byte patternArray[25]={0};
