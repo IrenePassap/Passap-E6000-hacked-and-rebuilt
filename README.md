@@ -19,3 +19,4 @@ The program codes are partially commented. Most methods or variable names are se
 
 - Raspberry Pi 3 programm code: PyQT5_GUI_DEF_V_1.2.2019
 
+Without the work of Hackerspace-Bamberg I would never have been able to realize this project. See https://github.com/knitty/firmware; https://www.hackerspace-bamberg.de/Passap_pfaff_e6000 
