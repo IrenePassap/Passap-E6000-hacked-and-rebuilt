@@ -1,5 +1,10 @@
 # Rebuilt
 
+Passap E6000 Project
+Author: IrenePassap
+version 1.2.2019
+
+
 The programs are written for the Passap E6000 knitting machine. There are three programs, one for the front lock (Arduino M0), one for the rear lock (Arduino M0) and one for the Raspberry Pi 3.
 
 Feel free to use the program codes for your project. The programs work perfectly for my knitting machine. It also lacks features of the original Passap console. The programs are only intended to give you an idea for your own project.
