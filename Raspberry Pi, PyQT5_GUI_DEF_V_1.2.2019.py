@@ -1,3 +1,9 @@
+# Passap E6000 Project
+# Author: IrenePassap
+# version 1.2.2019
+
+# python code for Raspberry Pi 3
+
 
 import random, sys
 import PyCmdMessenger
