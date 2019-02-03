@@ -1,4 +1,4 @@
-# Rebuilt
+# Passap E 6000 Console, Reverse-Engineering
 
 Passap E6000 Project; 
 Author: IrenePassap; 
