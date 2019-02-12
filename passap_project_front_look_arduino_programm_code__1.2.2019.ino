@@ -282,7 +282,7 @@ void loop() {
         if (patternChange_R == true){
           patternChange_L = true;
           patternChange_R = false;
-          patternPos = currentCursorPosition - 122;   // currentCursorPosition - 100 + 15;
+          patternPos = currentCursorPosition - 122;   // currentCursorPosition - (100 + 22);
           rowCount += 1;    // Arduino meldet neue Reihe, das muss unbedingt noch abgesichert werden durch err für frühzeitiges Schlittenwenden
             
           digitalWrite(PIN_OUT, HIGH);
@@ -302,7 +302,7 @@ void loop() {
         if (patternChange_L == true){
           patternChange_L = false;
           patternChange_R = true;
-          patternPos = currentCursorPosition -112; // currentCursorPosition - 100 " 25"
+          patternPos = currentCursorPosition -112; // currentCursorPosition - (100+12)
           rowCount +=1;   // Richtungswechsel = Reihenzähler plus 1
             
           digitalWrite(PIN_OUT, HIGH);
