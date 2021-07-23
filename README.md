@@ -1,8 +1,9 @@
 # Passap E 6000 Console, Reverse-Engineering
+# Passap Electra 4600: Motor and controller rebuilt
 
 Passap E6000 Project; 
 Author: IrenePassap; 
-version 20.6.2020, update 20.6.21 for Passap E6000, programm code for Electra 4600 
+version 20.6.2020, update 20.6.21 for Passap E6000, programm code for Electra 4600 and Raspberry Pi 3B (Debian Buster)
 
 
 The programs are written for the Passap E6000 knitting machine and the Electra 4600 engine. There are four programs, one for the front lock (Arduino M0), one for the rear lock (Arduino M0), one for the motor and one for the Raspberry Pi 3.
