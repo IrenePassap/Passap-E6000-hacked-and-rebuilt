@@ -19,7 +19,7 @@ The program codes are partially commented. Most methods or variable names are se
 
 - Passap Electra 4600 motor programm code, update 20.6.21 version 6
 
-- Raspberry Pi 3 programm code --> update coming soon
+- Raspberry Pi 3 programm code --> update 23.7.21
 
 The Project description is published on Hackaday: https://hackaday.io/project/163701-passap-e6000-rebuilt-and-replaced-console
 
