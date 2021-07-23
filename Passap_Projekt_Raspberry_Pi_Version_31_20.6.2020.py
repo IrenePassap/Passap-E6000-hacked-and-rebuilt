@@ -1,24 +1,25 @@
-# Version 31
-# Passap E6000 rebuilt and replaced console, Electra 4600 rebuilt
+# Passap E6000 rebuilt and replaced console,
+# Passap Electra 4600 rebuilt and replaced controller
 
-# created by Irene Wolf, 20.6.2020
+# created by Irene Wolf
 
-# Python code for Raspberry Pi 3
+# Version 36.3, 23.7.2021
+# Python code for Raspberry Pi 3, OS Debian Buster
 
 
 import random, sys
 import PyCmdMessenger
 import struct
 import RPi.GPIO as GPIO
-import time
 import sqlite3
 import time
 import datetime
 import os
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QGridLayout
+
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QGridLayout, QAction
 from PyQt5.QtWidgets import QWidget, QLineEdit, QMessageBox, QLabel, QFileDialog, QDialog
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtCore import pyqtSlot
 from PyQt5 import QtCore, QtWidgets, QtGui
 
@@ -120,20 +121,77 @@ knitpat_black_VNB = []
 knitpat_white_VNB = []
 knitpat_green_VNB = []
 knitpat_blue_VNB = []
-knitpat_blg_VNB = []
-knitpat_blgb_VNB = []
+knitpat_red_VNB = []
+
+knitpat_black_white_VNB = []
+knitpat_black_green_VNB = []
+knitpat_black_blue_VNB = []
+knitpat_black_red_VNB = []
+
+knitpat_black_white_green_VNB = []
+knitpat_black_white_blue_VNB = []
+knitpat_black_white_red_VNB = []
+
+knitpat_black_green_blue_VNB = []
+knitpat_black_green_red_VNB = []
+
+knitpat_black_blue_red_VNB = []
+
+knitpat_white_green_VNB = []
+knitpat_white_blue_VNB = []
+knitpat_white_red_VNB = []
+
+knitpat_white_green_blue_VNB = []
+knitpat_white_green_red_VNB = []
+
+knitpat_white_blue_red_VNB = []
+
+knitpat_green_blue_VNB = []
+knitpat_green_red_VNB = []
+knitpad_green_blue_red_VNB = []
+
+knitpad_blue_red_VNB = []
 
 knitpat_black_HNB = []
 knitpat_white_HNB = []
 knitpat_green_HNB = []
 knitpat_blue_HNB = []
-knitpat_blg_HNB = []
-knitpat_blgb_HNB = []
+knitpat_red_HNB = []
 
-knitpat_fullRow =  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-knitpat_emptyRow = [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+knitpat_black_white_HNB = []
+knitpat_black_green_HNB = []
+knitpat_black_blue_HNB = []
+knitpat_black_red_HNB = []
+
+knitpat_black_white_green_HNB = []
+knitpat_black_white_blue_HNB = []
+knitpat_black_white_red_HNB = []
+
+knitpat_black_green_blue_HNB = []
+knitpat_black_green_red_HNB = []
+
+knitpat_black_blue_red_HNB = []
+
+knitpat_white_green_HNB = []
+knitpat_white_blue_HNB = []
+knitpat_white_red_HNB = []
+
+knitpat_white_green_blue_HNB = []
+knitpat_white_green_red_HNB = []
+
+knitpat_white_blue_red_HNB = []
+
+knitpat_green_blue_HNB = []
+knitpat_green_red_HNB = []
+knitpad_green_blue_red_HNB = []
+
+knitpad_blue_red_HNB = []
+
+knitpat_fullRow =  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+knitpat_emptyRow = [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255]
 knitpat_rib10 = [170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170]
 knitpat_rib01 = [85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85]
+
 
 #--------------------------------------------------------------------------
 # Variables used for motor
@@ -151,15 +209,24 @@ endStopp = 0
 # col hat two state: 0 = no colour change, 1 = colour change
 col = 0
 
+change_drive_left = ""
+change_drive_right = ""
+form_stopp = ""
+slow_speed = 0
+speed_value = 0
+row_end = 0
+col_change = 0
+
+
 
 #--------------------------------------------------------------------------
 # Communication Arduino - Raspi
 #--------------------------------------------------------------------------
 
 
-# connect to Motor Arduino Uno
+# connect to Motor Arduino Nano
 # baud rate max 19200 with Arduino Serial
-motor = PyCmdMessenger.ArduinoBoard('/dev/ttyUSB-ArduinoMotor',19200)
+motor = PyCmdMessenger.ArduinoBoard('/dev/ttyUSB-ArduinoMotor',baud_rate=19200)
 motor.enable_dtr=False
 motor.int_bytes=4
 
@@ -168,9 +235,11 @@ commands =[["slowDownSpeed", "i"],["sbSlowDownSpeed", "i"],
            ["setRowEndStopp", "?"],["sbRowEndStopp", "?"],
            ["setFormStopp", ""],["sbFormStopp", "s"],
            ["setDrive_left", ""], ["sbDrive_left", "s"],
-           ["setDrive_right", ""], ["sbDrive_right", "s"]]
+           ["setDrive_right",""], ["sbDrive_right", "s"]]
 
 connectionMotor= PyCmdMessenger.CmdMessenger(motor,commands)
+
+
 
 
 # connect to VNB Arduino M0 (front lock)
@@ -216,8 +285,9 @@ def pattern_Array(listMy,data):
 
     n = 0
     m = 0
-    pattern = [0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0,
-               0b0, 0b0, 0b0]
+    pattern = [0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0,0b0]
+
+    
 
     while m < 22:
 
@@ -239,7 +309,7 @@ def pattern_Array(listMy,data):
 
     print("nameTech: " + nameTech)
 
-    file_name = ("/home/pi/PyIrene/ProgrammCode/Tech/"+(nameTech))
+    file_name = ("/home/pi/Passap/Tech/"+(nameTech))
 
     print("file_name " + file_name)
     
@@ -249,6 +319,7 @@ def pattern_Array(listMy,data):
             data.append(r)
         data.pop(0)
     return data
+
 
 
 # returns for each colour in the pattern drawing a seperat pattern array
@@ -265,9 +336,37 @@ def get_pattern(data):
     listMy_white = []
     listMy_green = []
     listMy_blue = []
+    listMy_red = []
 
-    listMy_blg = []
-    listMy_blgb = []
+    listMy_black_white = []
+    listMy_black_green = []
+    listMy_black_blue = []
+    listMy_black_red = []
+
+    listMy_black_white_green = []
+    listMy_black_white_blue = []
+    listMy_black_white_red = []
+    
+    listMy_black_green_blue = []
+    listMy_black_green_red = []
+
+    listMy_black_blue_red = []
+
+    listMy_white_green = []
+    listMy_white_blue = []
+    listMy_white_red = []
+
+    listMy_white_green_blue = []
+    listMy_white_green_red = []
+
+    listMy_white_blue_red = []
+
+    listMy_green_blue = []
+    listMy_green_red = []
+    listMy_green_blue_red = []
+
+    listMy_blue_red = []
+
 
     for x in range(0, heightMy):
 
@@ -275,9 +374,37 @@ def get_pattern(data):
         row_white = []
         row_green = []
         row_blue = []
+        row_red = []
 
-        row_blg = []
-        row_blgb = []
+        row_black_white = []
+        row_black_green = []
+        row_black_blue = []
+        row_black_red = []
+
+        row_black_white_green = []
+        row_black_white_blue = []
+        row_black_white_red = []
+        
+        row_black_green_blue = []
+        row_black_green_red = []
+
+        row_black_blue_red = []
+
+        row_white_green = []
+        row_white_blue = []
+        row_white_red = []
+
+        row_white_green_blue = []
+        row_white_green_red = []
+
+        row_white_blue_red = []
+    
+        row_green_blue = []
+        row_green_red = []
+        
+        row_green_blue_red = []
+
+        row_blue_red = []
 
 
         for y in range(0, widthMy):
@@ -306,32 +433,206 @@ def get_pattern(data):
             else:
                 row_blue.append(1)
 
-            if redMy < 20 and (greenMy > 200 or blueMy > 200):
-                row_blg.append(0)
+            if redMy > 200 and greenMy < 20 and blueMy < 20:
+                row_red.append(0)
             else:
-                row_blg.append(1)
+                row_red.append(1)
 
-            if (redMy < 20 and greenMy > 200 and blueMy < 20) or (redMy < 20 and greenMy < 20 and blueMy > 200) or (redMy == 0 and greenMy == 0 and blueMy == 0):
-                row_blgb.append(0)
-            else:
-                row_blgb.append(1)
                 
+            # black, white
+            if (redMy == 0 and greenMy == 0 and blueMy == 0) or (redMy == 255 and greenMy == 255 and blueMy == 255):
+                row_black_white.append(0)
+            else:
+                row_black_white.append(1)
+
+            # black, green
+            if (redMy == 0 and greenMy == 0 and blueMy == 0) or (redMy < 20 and greenMy > 200 and blueMy < 20):
+                row_black_green.append(0)
+            else:
+                row_black_green.append(1)
+
+            # black, blue
+            if (redMy == 0 and greenMy == 0 and blueMy == 0) or (redMy < 20 and greenMy < 20 and blueMy > 200):
+                row_black_blue.append(0)
+            else:
+                row_black_blue.append(1)
+
+            # black, red
+            if (redMy == 0 and greenMy == 0 and blueMy == 0) or (redMy > 200 and greenMy < 20 and blueMy < 20):
+                row_black_red.append(0)
+            else:
+                row_black_red.append(1)
+
+            # black, white, green
+            if (redMy == 0 and greenMy == 0 and blueMy == 0) or (redMy == 255 and greenMy == 255 and blueMy == 255) or (redMy < 20 and greenMy > 200 and blueMy < 20):
+
+                row_black_white_green.append(0)
+            else:
+                row_black_white_green.append(1)
+
+            # black, white, blue
+            if (redMy == 0 and greenMy == 0 and blueMy == 0) or (redMy == 255 and greenMy == 255 and blueMy == 255) or (redMy < 20 and greenMy < 20 and blueMy > 200):
+                row_black_white_blue.append(0)
+            else:
+                row_black_white_blue.append(1)
+
+            # black, white, red
+            if (redMy == 0 and greenMy == 0 and blueMy == 0) or (redMy == 255 and greenMy == 255 and blueMy == 255) or (redMy > 200 and greenMy < 20 and blueMy < 20):
+                row_black_white_red.append(0)
+            else:
+                row_black_white_red.append(1)
+
+            # black, green, blue    
+            if (redMy == 0 and greenMy == 0 and blueMy == 0) or (redMy < 20 and greenMy > 200 and blueMy < 20) or (redMy < 20 and greenMy < 20 and blueMy > 200):
+                row_black_green_blue.append(0)
+            else:
+                row_black_green_blue.append(1)
+
+            # black, green, red
+            if (redMy == 0 and greenMy == 0 and blueMy == 0) or (redMy < 20 and greenMy > 200 and blueMy < 20) or (redMy > 200 and greenMy < 20 and blueMy < 20):
+                row_black_green_red.append(0)
+            else:
+                row_black_green_red.append(1)
+
+            
+            # black, blue, red
+            if (redMy == 0 and greenMy == 0 and blueMy == 0) or (redMy < 20 and greenMy < 20 and blueMy > 200) or (redMy > 200 and greenMy < 20 and blueMy < 20):
+                row_black_blue_red.append(0)
+            else:
+                row_black_blue_red.append(1)
+
+            # white, green
+            if (redMy == 255 and greenMy == 255 and blueMy == 255) or (redMy < 20 and greenMy > 200 and blueMy < 20):
+                row_white_green.append(0)
+            else:
+                row_white_green.append(1)
+
+            # white, blue            
+            if (redMy == 255 and greenMy == 255 and blueMy == 255) or (redMy < 20 and greenMy < 20 and blueMy > 200):
+                row_white_blue.append(0)
+            else:
+                row_white_blue.append(1)
+
+            # white, red            
+            if (redMy == 255 and greenMy == 255 and blueMy == 255) or (redMy > 200 and greenMy < 20 and blueMy < 20):
+                row_white_red.append(0)
+            else:
+                row_white_red.append(1)
+
+            # white, green, blue
+            if (redMy == 255 and greenMy == 255 and blueMy == 255) or (redMy < 20 and greenMy > 200 and blueMy < 20) or (redMy < 20 and greenMy < 20 and blueMy > 200):
+                row_white_green_blue.append(0)
+            else:
+                row_white_green_blue.append(1)
+
+            # white, green, red
+            if (redMy == 255 and greenMy == 255 and blueMy == 255) or (redMy < 20 and greenMy > 200 and blueMy < 20) or (redMy > 200 and greenMy < 20 and blueMy < 20):
+                row_white_green_red.append(0)
+            else:
+                row_white_green_red.append(1)
+            
+            # white, blue, red
+            if (redMy == 255 and greenMy == 255 and blueMy == 255) or (redMy < 20 and greenMy < 20 and blueMy > 200) or (redMy > 200 and greenMy < 20 and blueMy < 20):
+                row_white_blue_red.append(0)
+            else:
+                row_white_blue_red.append(1)
+               
+            # green, blue
+            if (redMy < 20 and greenMy > 200 and blueMy < 20) or (redMy < 20 and greenMy < 20 and blueMy > 200):
+                row_green_blue.append(0)
+            else:
+                row_green_blue.append(1)
+
+            # green, red
+            if (redMy < 20 and greenMy > 200 and blueMy < 20) or (redMy > 200 and greenMy < 20 and blueMy < 20):
+                row_green_red.append(0)
+            else:
+                row_green_red.append(1)
+                
+            # green, blue, red
+            if (redMy < 20 and greenMy > 200 and blueMy < 20) or (redMy < 20 and greenMy < 20 and blueMy > 200) or (redMy > 200 and greenMy < 20 and blueMy < 20):
+                row_green_blue_red.append(0)
+            else:
+                row_green_blue_red.append(1)
+                
+            # blue, red
+            if (redMy < 20 and greenMy < 20 and blueMy > 200) or (redMy > 200 and greenMy < 20 and blueMy < 20):
+                row_blue_red.append(0)
+            else:
+                row_blue_red.append(1)
+
+
 
         listMy_black.append(row_black)
         listMy_white.append(row_white)
         listMy_green.append(row_green)
         listMy_blue.append(row_blue)
+        listMy_red.append(row_red)
 
-        listMy_blg.append(row_blg)
-        listMy_blgb.append(row_blgb)
+        listMy_black_white.append(row_black_white)
+        listMy_black_green.append(row_black_green)
+        listMy_black_blue.append(row_black_blue)
+        listMy_black_red.append(row_black_red)
+        
+        listMy_black_white_green.append(row_black_white_green)
+        listMy_black_white_blue.append(row_black_white_blue)
+        listMy_black_white_red.append(row_black_white_red)
+        
+        listMy_black_green_blue.append(row_black_green_blue)
+        listMy_black_green_red.append(row_black_green_red)
+
+        listMy_black_blue_red.append(row_black_blue_red)
+
+        listMy_white_green.append(row_white_green)
+        listMy_white_blue.append(row_white_blue)
+        listMy_white_red.append(row_white_red)
+
+        listMy_white_green_blue.append(row_white_green_blue)
+        listMy_white_green_red.append(row_white_green_red)
+
+        listMy_white_blue_red.append(row_white_blue_red)
+
+        listMy_green_blue.append(row_green_blue)
+        listMy_green_red.append(row_green_red)
+        listMy_green_blue_red.append(row_green_blue_red)
+
+        listMy_blue_red.append(row_blue_red)
+        
 
     knitpat_black = []
     knitpat_white = []
     knitpat_green = []
     knitpat_blue = []
+    knitpat_red = []
 
-    knitpat_blg = []
-    knitpat_blgb = []
+    knitpat_black_white = []
+    knitpat_black_green = []
+    knitpat_black_blue = []
+    knitpat_black_red = []
+
+    knitpat_black_white_green = []
+    knitpat_black_white_blue = []
+    knitpat_black_white_red = []
+    
+    knitpat_black_green_blue = []
+    knitpat_black_green_red = []
+
+    knitpat_black_blue_red = []
+
+    knitpat_white_green = []
+    knitpat_white_blue = []
+    knitpat_white_red = []
+
+    knitpat_white_green_blue = []
+    knitpat_white_green_red = []
+
+    knitpat_white_blue_red = []
+
+    knitpat_green_blue = []
+    knitpat_green_red = []
+    knitpat_green_blue_red = []
+
+    knitpat_blue_red = []
 
 
     for i in range(0, heightMy):
@@ -351,17 +652,103 @@ def get_pattern(data):
         knitpat_blue.append(pattern_blue)
 
     for i in range(0, heightMy):
-        pattern_blg = pattern_Array(listMy_blg,i)
-        knitpat_blg.append(pattern_blg)
+        pattern_red = pattern_Array(listMy_red,i)
+        knitpat_red.append(pattern_red)
 
     for i in range(0, heightMy):
-        pattern_blgb = pattern_Array(listMy_blgb,i)
-        knitpat_blgb.append(pattern_blgb)
+        pattern_black_white = pattern_Array(listMy_black_white,i)
+        knitpat_black_white.append(pattern_black_white)
 
+    for i in range(0, heightMy):
+        pattern_black_green = pattern_Array(listMy_black_green,i)
+        knitpat_black_green.append(pattern_black_green)
+
+    for i in range(0, heightMy):
+        pattern_black_blue = pattern_Array(listMy_black_blue,i)
+        knitpat_black_blue.append(pattern_black_blue)
+
+    for i in range(0, heightMy):
+        pattern_black_red = pattern_Array(listMy_black_red,i)
+        knitpat_black_red.append(pattern_black_red)
+
+    for i in range(0, heightMy):
+        pattern_black_white_green = pattern_Array(listMy_black_white_green,i)
+        knitpat_black_white_green.append(pattern_black_white_green)
+
+    for i in range(0, heightMy):
+        pattern_black_white_blue = pattern_Array(listMy_black_white_blue,i)
+        knitpat_black_white_blue.append(pattern_black_white_blue)
+
+    for i in range(0, heightMy):
+        pattern_black_white_red = pattern_Array(listMy_black_white_red,i)
+        knitpat_black_white_red.append(pattern_black_white_red)
+
+    for i in range(0, heightMy):
+        pattern_black_green_blue = pattern_Array(listMy_black_green_blue,i)
+        knitpat_black_green_blue.append(pattern_black_green_blue)
+
+    for i in range(0, heightMy):
+        pattern_black_green_red = pattern_Array(listMy_black_green_red,i)
+        knitpat_black_green_red.append(pattern_black_green_red)
+
+    for i in range(0, heightMy):
+        pattern_black_blue_red = pattern_Array(listMy_black_blue_red,i)
+        knitpat_black_blue_red.append(pattern_black_blue_red)
+
+    for i in range(0, heightMy):
+        pattern_white_green = pattern_Array(listMy_white_green,i)
+        knitpat_white_green.append(pattern_white_green)
+
+    for i in range(0, heightMy):
+        pattern_white_blue = pattern_Array(listMy_white_blue,i)
+        knitpat_white_blue.append(pattern_white_blue)
+
+    for i in range(0, heightMy):
+        pattern_white_red = pattern_Array(listMy_white_red,i)
+        knitpat_white_red.append(pattern_white_red)
+
+    for i in range(0, heightMy):
+        pattern_white_green_blue = pattern_Array(listMy_white_green_blue,i)
+        knitpat_white_green_blue.append(pattern_white_green_blue)
+
+    for i in range(0, heightMy):
+        pattern_white_green_red = pattern_Array(listMy_white_green_red,i)
+        knitpat_white_green_red.append(pattern_white_green_red)
+
+    for i in range(0, heightMy):
+        pattern_white_blue_red = pattern_Array(listMy_white_blue_red,i)
+        knitpat_white_blue_red.append(pattern_white_blue_red)
+
+    for i in range(0, heightMy):
+        pattern_green_blue = pattern_Array(listMy_green_blue,i)
+        knitpat_green_blue.append(pattern_green_blue)
+
+    for i in range(0, heightMy):
+        pattern_green_red = pattern_Array(listMy_green_red,i)
+        knitpat_green_red.append(pattern_green_red)
+
+    for i in range(0, heightMy):
+        pattern_green_blue_red = pattern_Array(listMy_green_blue_red,i)
+        knitpat_green_blue_red.append(pattern_green_blue_red)
+
+    for i in range(0, heightMy):
+        pattern_blue_red = pattern_Array(listMy_blue_red,i)
+        knitpat_blue_red.append(pattern_blue_red)
+        
+        
     n = 0
 
 
-    return knitpat_black, knitpat_white, knitpat_green, knitpat_blue, knitpat_blg, knitpat_blgb
+    return (knitpat_black, knitpat_white, knitpat_green, knitpat_blue, knitpat_red,
+            knitpat_black_white, knitpat_black_green, knitpat_black_blue, knitpat_black_red,
+            knitpat_black_white_green,knitpat_black_white_blue, knitpat_black_white_red,
+            knitpat_black_green_blue, knitpat_black_green_red,
+            knitpat_black_blue_red,
+            knitpat_white_green, knitpat_white_blue, knitpat_white_red,
+            knitpat_white_green_blue, knitpat_white_green_red,
+            knitpat_white_blue_red,
+            knitpat_green_blue, knitpat_green_red, knitpat_green_blue_red,
+            knitpat_blue_red)
 
 
 
@@ -382,6 +769,7 @@ def get_needlePos_VNB():
     connectionVNB.send("getNPos")       
     received_VNB = connectionVNB.receive()
     needlePos_VNB = received_VNB[1][0]
+    #print(needlePos_VNB)
  
 
 def get_needlePos_HNB():
@@ -389,6 +777,7 @@ def get_needlePos_HNB():
     connectionHNB.send("getNPos")       
     received_HNB = connectionHNB.receive()  
     needlePos_HNB = received_HNB[1][0]
+    #print(needlePos_HNB)
 
 
 def get_cursorPos():
@@ -400,41 +789,55 @@ def get_cursorPos():
 
 
 def drive_left():
+    global change_drive_left        
     connectionMotor.send("setDrive_left")
     received_Motor = connectionMotor.receive()
-    #print("rec_left: ", received_Motor[1][0])
+    change_drive_left = received_Motor[1][0]
+    print("drive_left: ", change_drive_left)
    
 
 def drive_right():
+    global change_drive_right  
     connectionMotor.send("setDrive_right")
     received_Motor_R = connectionMotor.receive()
-    #print("rec_right: ", received_Motor_R[1][0])
+    change_drive_right = received_Motor_R[1][0]
+    #print("drive_right: ", change_drive_right)
     
 
 def col_speed():
-    global speed
+    global slow_speed
+    global speed  
     speed = 1
     connectionMotor.send("slowDownSpeed", speed)   
-    received_Motor_Speed=connectionMotor.receive()    
-    #print("rec_colour speed: ", received_Motor_Speed[1][0])
+    received_Motor_Speed=connectionMotor.receive()
+    slow_speed = received_Motor_Speed[1][0]
+    #print("rec_colour speed: ", slow_speed)
     
 def poti_speed():
-    global speed
+    global speed_value
+    global speed   
     speed = 0
     connectionMotor.send("slowDownSpeed", speed)   
-    received_Motor_Speed=connectionMotor.receive()    
-    #print("rec_poti speed: ", received_Motor_Speed[1][0])
+    received_Motor_Speed=connectionMotor.receive()
+    speed_value = received_Motor_Speed[1][0]
+    #print("rec_poti speed: ", speed_value)
 
 def rowEndStopp():
     global endStopp
+    global row_end
+    #print("rowEnd: ", endStopp)
     connectionMotor.send("setRowEndStopp", endStopp)   
-    received_Motor_endStopp=connectionMotor.receive()    
-    #print("rec_rowEndStopp: ", received_Motor_endStopp[1][0])
+    received_Motor_endStopp=connectionMotor.receive()
+    row_end = received_Motor_endStopp[1][0]
+    print("rowEndStopp: ", row_end)
 
-def colourChange(): 
+def colourChange():
+    global col_change
+    global col
     connectionMotor.send("setColourChange", col)   
-    received_Motor_Col=connectionMotor.receive()    
-    #print("rec_colourChange: ", received_Motor_Col[1][0])
+    received_Motor_Col=connectionMotor.receive()
+    col_change = received_Motor_Col[1][0]
+    #print("colourChange: ", received_Motor_Col[1][0])
      
 
 def returnTechData(number):
@@ -445,7 +848,7 @@ def returnTechData(number):
 
     #print("nameTech: " + nameTech)
 
-    file_name = ("/home/pi/PyIrene/ProgrammCode/Tech/"+(nameTech))
+    file_name = ("/home/pi/Passap/Tech/"+(nameTech))
 
     #print("file_name " + file_name)
     
@@ -473,6 +876,11 @@ def techArray():
     global rowCount_VNB
     global rowCount_HNB  
     global countTech
+    global flag_left
+    global flag_right
+
+    #print("flag_right ", flag_right)
+    #print("flag_left ", flag_left)
 
     if countTech >= len(tech_Array):
         countTech = 0
@@ -506,7 +914,7 @@ def techArray():
     colorSetting = tech_Array[countTech][8]    
 
     infoTech = tech_Array[countTech][9]
-    print(infoTech)
+    #print(infoTech)
     
     countTech += 1
 
@@ -517,7 +925,7 @@ def techArray():
 
     dynamic_date_entry_settings()
 
-    print("end: ", time.clock())
+    #print("end: ", time.clock())
     
 
 #--------------------------------------------------------------
@@ -533,7 +941,7 @@ def returnFormData(number):
 
     #print("nameForm: " + nameForm)
 
-    file_name_form = ("/home/pi/PyIrene/ProgrammCode/Form/"+(nameForm))
+    file_name_form = ("/home/pi/Passap/Form/"+(nameForm))
 
     #print("file_name " + file_name_form)
     
@@ -559,9 +967,7 @@ def setEnd_lr():
     rightEndData_HNB = int(form_Array[countForm_line][5])
 
     sendData()
-    
-    
-    
+  
 
 def setEnd_lr_VNB():
     global rightEndData_VNB
@@ -574,7 +980,6 @@ def setEnd_lr_VNB():
     sendData_VNB()
     
 
-
 def setEnd_lr_HNB():
     global rightEndData_HNB
     global leftEndData_HNB
@@ -584,8 +989,7 @@ def setEnd_lr_HNB():
     rightEndData_HNB = int(form_Array[countForm_line][5])    
 
     sendData_HNB()
-    
-    
+     
     
 def decrease():
     global leftEndData_VNB
@@ -701,7 +1105,7 @@ def setShortRow():
 def form_stopp():
     connectionMotor.send("setFormStopp")
     received_formStopp = connectionMotor.receive()
-    print("rec_formStopp: ", received_formStopp[1][0])
+    print("formStopp: ", received_formStopp[1][0])
 
 def noForm_stopp():
     print("no form stopp")
@@ -903,7 +1307,7 @@ def formArray():
         #print("end: ", time.clock())"""
         
     rowCountForm += 1
-    print("rowCountForm end function", rowCountForm)
+    #print("rowCountForm end function", rowCountForm)
 
 
 
@@ -918,14 +1322,14 @@ def inputChange_right(right_GPIO):
     global flag_left
     global flag_right
     
-    print("GPIO_ri: ", needlePos_VNB)
+    print("right side: ", needlePos_VNB)
         
     if col == 0 and needlePos_VNB <= (int(rightEndData_VNB)-15) and flag_right == 1:       
 
         drive_left()
         techArray()
 
-        print("drive left, col 0", needlePos_VNB)
+        print("drive left, no col_change", needlePos_VNB)
 
         flag_left = 1
         flag_right = 0
@@ -935,7 +1339,7 @@ def inputChange_right(right_GPIO):
 
     if (col == 1):                
         col_speed()
-        print("col speed", needlePos_VNB) 
+        #print("col speed", needlePos_VNB) 
        
 
 def inputChange_left(left_GPIO):
@@ -947,7 +1351,7 @@ def inputChange_left(left_GPIO):
     global flag_left
     global flag_right
 
-    print("GPI0_le: ", needlePos_VNB)
+    print("left side: ", needlePos_VNB)
     #print("cursorPos: ", cursorPos)
 
     if needlePos_VNB >= (int(leftEndData_VNB) + 15) and flag_left == 1:
@@ -972,13 +1376,13 @@ def inputChange_directionChange(directionchange_GPIO):
     global flag_left
     global flag_right
 
-    print("GPI0_directionChange: ", needlePos_VNB)
+    print("right side: ", needlePos_VNB)
 
     if (needlePos_VNB <= (int(rightEndData_VNB)-18)  and col == 1 and flag_right == 1):
 
         poti_speed()
         techArray()
-        print("after colour change: ", needlePos_VNB)      
+        print("drive left, col_change: ", needlePos_VNB)      
     
         flag_left = 1
         flag_right = 0
@@ -1056,15 +1460,72 @@ def create_table():
         global knitpat_white_VNB
         global knitpat_green_VNB
         global knitpat_blue_VNB
-        global knitpat_blg_VNB
-        global knitpat_blgb_VNB
+        global knitpat_red_VNB
+        
+        global knitpat_black_white_VNB
+        global knitpat_black_green_VNB
+        global knitpat_black_blue_VNB
+        global knitpat_black_red_VNB
+
+        global knitpat_black_white_green_VNB
+        global knitpat_black_white_blue_VNB
+        global knitpat_black_white_red_VNB
+        
+        global knitpat_black_green_blue_VNB
+        global knitpat_black_green_red_VNB
+
+        global knitpat_black_blue_red_VNB
+
+        global knitpat_white_green_VNB
+        global knitpat_white_blue_VNB
+        global knitpat_white_red_VNB
+
+        global knitpat_white_green_blue_VNB
+        global knitpat_white_green_red_VNB
+
+        global knitpat_white_blue_red_VNB
+
+        global knitpat_green_blue_VNB
+        global knitpat_green_red_VNB
+        global knitpat_green_blue_red_VNB
+
+        global knitpat_blue_red_VNB
+
 
         global knitpat_black_HNB
         global knitpat_white_HNB
         global knitpat_green_HNB
         global knitpat_blue_HNB
-        global knitpat_blg_HNB
-        global knitpat_blgb_HNB
+        global knitpat_red_HNB
+
+        global knitpat_black_white_HNB
+        global knitpat_black_green_HNB
+        global knitpat_black_blue_HNB
+        global knitpat_black_red_HNB
+
+        global knitpat_black_white_green_HNB
+        global knitpat_black_white_blue_HNB
+        global knitpat_black_white_red_HNB
+        
+        global knitpat_black_green_blue_HNB
+        global knitpat_black_green_red_HNB
+
+        global knitpat_black_blue_red_HNB
+
+        global knitpat_white_green_HNB
+        global knitpat_white_blue_HNB
+        global knitpat_white_red_HNB
+
+        global knitpat_white_green_blue_HNB
+        global knitpat_white_green_red_HNB
+
+        global knitpat_white_blue_red_HNB
+
+        global knitpat_green_blue_HNB
+        global knitpat_green_red_HNB
+        global knitpat_green_blue_red_HNB
+
+        global knitpat_blue_red_HNB
 
         c.execute('SELECT tabID, datestamp,'
                   'rV, rH,'
@@ -1104,11 +1565,24 @@ def create_table():
         print("{:<6s}{:>4d}".format("patV:", patNum_VNB))
 
         temp_patNumb_VNB = str(patNum_VNB) + ".bmp"
-        file_name_pat_VNB = ("/home/pi/PyIrene/ProgrammCode/Pat/" + temp_patNumb_VNB)
+        file_name_pat_VNB = ("/home/pi/Passap/Pat/" + temp_patNumb_VNB)
+        
 
         try:
-            (knitpat_black_VNB,knitpat_white_VNB,knitpat_green_VNB,
-            knitpat_blue_VNB,knitpat_blg_VNB,knitpat_blgb_VNB) = get_pattern(file_name_pat_VNB)
+            (knitpat_black_VNB, knitpat_white_VNB, knitpat_green_VNB,
+             knitpat_blue_VNB, knitpat_red_VNB,
+             knitpat_black_white_VNB, knitpat_black_green_VNB,
+             knitpat_black_blue_VNB, knitpat_black_red_VNB,
+             knitpat_black_white_green_VNB, knitpat_black_white_blue_VNB,
+             knitpat_black_white_red_VNB,
+             knitpat_black_green_blue_VNB, knitpat_black_green_red_VNB,
+             knitpat_black_blue_red_VNB, 
+             knitpat_white_green_VNB, knitpat_white_blue_VNB, knitpat_white_red_VNB,
+             knitpat_white_green_blue_VNB, knitpat_white_green_red_VNB,
+             knitpat_white_blue_red_VNB,
+             knitpat_green_blue_VNB, knitpat_green_red_VNB, knitpat_green_blue_red_VNB,
+             knitpat_blue_red_VNB) = get_pattern(file_name_pat_VNB)
+            
             height_VNB = len(knitpat_black_VNB)         
 
         except IOError:
@@ -1119,11 +1593,23 @@ def create_table():
 
 
         temp_patNumb_HNB = str(patNum_HNB) + ".bmp"
-        file_name_pat_HNB = ("/home/pi/PyIrene/ProgrammCode/Pat/" + temp_patNumb_HNB)
+        file_name_pat_HNB = ("/home/pi/Passap/Pat/" + temp_patNumb_HNB)
 
         try:
-            (knitpat_black_HNB, knitpat_white_HNB, knitpat_green_HNB, knitpat_blue_HNB,
-            knitpat_blg_HNB, knitpat_blgb_HNB) = get_pattern(file_name_pat_HNB)
+            (knitpat_black_HNB, knitpat_white_HNB, knitpat_green_HNB,
+             knitpat_blue_HNB, knitpat_red_HNB,
+             knitpat_black_white_HNB, knitpat_black_green_HNB,
+             knitpat_black_blue_HNB, knitpat_black_red_HNB,
+             knitpat_black_white_green_HNB, knitpat_black_white_blue_HNB,
+             knitpat_black_white_red_HNB,
+             knitpat_black_green_blue_HNB, knitpat_black_green_red_HNB,
+             knitpat_black_blue_red_HNB, 
+             knitpat_white_green_HNB, knitpat_white_blue_HNB, knitpat_white_red_HNB,
+             knitpat_white_green_blue_HNB, knitpat_white_green_red_HNB,
+             knitpat_white_blue_red_HNB,
+             knitpat_green_blue_HNB, knitpat_green_red_HNB, knitpat_green_blue_red_HNB,
+             knitpat_blue_red_HNB) = get_pattern(file_name_pat_HNB)
+            
             height_HNB = len(knitpat_black_HNB)
 
         except IOError:
@@ -1262,7 +1748,7 @@ def dynamic_date_entry_settings():
     conn.commit()
 
     tableID += 1
-    print("tabID: ", tableID)
+    #print("tabID: ", tableID)
 
     c.close()
     conn.close()
@@ -1355,44 +1841,56 @@ def drop_index():
 def sendRow_color_toArduino(knit, colour):
 
     #print(colour)
-
+    
+    num_args=int(len(knit[rowCount_VNB]))
+    
+    #print("num_args", num_args)
+    
     try:
+            
+        connectionVNB.send("sPat", num_args, *knit[rowCount_VNB][:])
+            
+        received_cmd = connectionVNB.receive()
+    
+        #print('cmd', received_cmd)
+    
+        received = received_cmd[1]
+    
+        #print('received ', received)
+            
+        success = 1
+            
+        for i in range (num_args):
+                
+            #print('Raspi: ', knit[rowCount_VNB][i], ', Arduino: ', received[i])
+                
+            if knit[rowCount_VNB][i] == received[i]:
+                success *= 1
+            else:
+                success = 0
 
-        for h in range(1):
+            if success == 0:
+                success = "FAIL"
+                self.errorDialog("Pattern failure")
+            else:
+                success = "PASS"
 
-            num_args=len(knit[rowCount_VNB])
-
-            connectionVNB.send("sPat", num_args, *knit[rowCount_VNB][:]) 
-
-            received_cmd = connectionVNB.receive()
-            received = received_cmd[1] 
-
-            # print('received ', received)
-
-            success = 1
-
-            for i in range (1):           
-                if knit[rowCount_VNB][i] == received[i]:
-                    success *= 1
-                else:
-                    success = 0
-                if success == 0:
-                    success = "FAIL"
-                else:
-                    success = "PASS"
-
-            print("VNB row:",rowCount_VNB,colour,success)
-
+        print('VNB row: ', rowCount_VNB, ', col ', colour, ', ', success)
+    
     except:
-        print('Pattern failed', colour)
+        print("Pattern failed", colour)
+        
+        
 
+    
 
 
 def sendRow_pat_VNB(knit, info):
 
     #print(info)
+    #print(knit)
 
-    num_args = len(knit)
+    num_args = int(len(knit))
 
     connectionVNB.send("setEmptyPat", num_args, *knit)
 
@@ -1417,61 +1915,73 @@ def sendRow_pat_VNB(knit, info):
 
     if success == 0:
         success = "FAIL"
+        self.errorDialog("Pattern failure")
     else:
         success = "PASS"
 
-    print(info,success)
+    print(info, success)
 
 
-# Arduino HNB
 
+
+# Arduino VNB
+    
 def sendRow_color_toArduino_HNB(knit, colour):
 
-    # print(colour)
-
+    #print(colour)
+    
+    num_args=int(len(knit[rowCount_HNB]))
+    
+    #print("num_args", num_args)
+    
     try:
+            
+        connectionHNB.send("sPat", num_args, *knit[rowCount_HNB][:])
+            
+        received_cmd = connectionHNB.receive()
+    
+        #print('cmd', received_cmd)
+    
+        received = received_cmd[1]
+    
+        #print('received ', received)
+            
+        success = 1
+            
+        for i in range (num_args):
+                
+            #print('Raspi: ', knit[rowCount_HNB][i], ', Arduino: ', received[i])
+                
+            if knit[rowCount_HNB][i] == received[i]:
+                success *= 1
+            else:
+                success = 0
 
-        for h in range(1):
+            if success == 0:
+                success = "FAIL"
+                self.errorDialog("Pattern failure")
+            else:
+                success = "PASS"
 
-            num_args=len(knit[rowCount_HNB])
-
-            connectionHNB.send("sPat", num_args, *knit[rowCount_HNB][:]) 
-
-            received_cmd = connectionHNB.receive()
-            received = received_cmd[1] 
-
-            # print('received ', received)
-
-            success = 1
-
-            for i in range (1):           
-                if knit[rowCount_HNB][i] == received[i]:
-                    success *= 1
-                else:
-                    success = 0
-                if success == 0:
-                    success = "FAIL"
-                else:
-                    success = "PASS"
-
-            print("HNB row:",rowCount_HNB,colour,success)
-
+        print('HNB_row: ', rowCount_HNB, ' colour: ', colour, ' success: ', success)
+    
     except:
-        print('Pattern failed', colour)
+        print("Pattern failed HNB", colour)
         
 
 
 def sendRow_pat_HNB(knit, info):
 
-    # print(info)
+    print(info)
+    #print(knit)
 
-    num_args = len(knit)
+    num_args = int(len(knit))
 
     connectionHNB.send("setEmptyPat", num_args, *knit)
 
     received_cmd = connectionHNB.receive()
-
     received = received_cmd[1]
+    
     #print('received ', received)
 
     try:
@@ -1490,11 +2000,11 @@ def sendRow_pat_HNB(knit, info):
 
     if success == 0:
         success = "FAIL"
+        self.errorDialog("Pattern failure")
     else:
         success = "PASS"
 
     print(info,success)
-
 
 #*************************************************************
       
@@ -1513,23 +2023,97 @@ def sendRow_colour_black():
     #print ('sending black')
     sendRow_color_toArduino(knitpat_black_VNB, "black")
 
+def sendRow_colour_black_white():
+    #print ('sending black, white')
+    sendRow_color_toArduino(knitpat_black_white_VNB, "black_white")
+
+def sendRow_colour_black_green():
+    #print ('sending black, green')
+    sendRow_color_toArduino(knitpat_black_green_VNB, "black_green")
+
+def sendRow_colour_black_blue():
+    #print ('sending black, blue')
+    sendRow_color_toArduino(knitpat_black_blue_VNB, "black_blue")
+
+def sendRow_colour_black_red():
+    #print ('sending black, red')
+    sendRow_color_toArduino(knitpat_black_red_VNB, "black_red")
+
+def sendRow_colour_black_white_green():
+    #print ('sending black, white, green')
+    sendRow_color_toArduino(knitpat_black_white_green_VNB, "black_white_green")
+
+def sendRow_colour_black_white_blue():
+    #print ('sending black, white, blue')
+    sendRow_color_toArduino(knitpat_black_white_blue_VNB, "black_white_blue")
+
+def sendRow_colour_black_white_red():
+    #print ('sending black, white, red')
+    sendRow_color_toArduino(knitpat_black_white_red_VNB, "black_white_red")
+
+def sendRow_colour_black_green_blue():
+    sendRow_color_toArduino(knitpat_black_green_blue_VNB, 'black_green_blue')
+
+def sendRow_colour_black_green_red():
+    sendRow_color_toArduino(knitpat_black_green_red_VNB, 'black_green_red')
+
+def sendRow_colour_black_blue_red():
+    sendRow_color_toArduino(knitpat_black_blue_red_VNB, 'black_blue_red')
+
 def sendRow_colour_white():
     #print ('arrived sendRow_colour white')
-    sendRow_color_toArduino(knitpat_white_VNB, "white")
+    sendRow_color_toArduino(knitpat_white_VNB,"white")
+
+def sendRow_colour_white_green():
+    #print ('sending white, green')
+    sendRow_color_toArduino(knitpat_white_green_VNB, "white_green")
+
+def sendRow_colour_white_blue():
+    #print ('sending white, blue')
+    sendRow_color_toArduino(knitpat_white_blue_VNB, "white_blue")
+
+def sendRow_colour_white_red():
+    #print ('sending white, red')
+    sendRow_color_toArduino(knitpat_white_red_VNB, "white_red")
+
+def sendRow_colour_white_green_blue():
+    #print ('sending white, green, blue')
+    sendRow_color_toArduino(knitpat_white_green_blue_VNB, "white_green_blue")
+
+def sendRow_colour_white_green_red():
+    #print ('sending white, green, red')
+    sendRow_color_toArduino(knitpat_white_green_red_VNB, "white_green_red")
+
+def sendRow_colour_white_blue_red():
+    #print ('sending white, blue, red')
+    sendRow_color_toArduino(knitpat_white_blue_red_VNB, "white_blue_red")
 
 def sendRow_colour_green():
     #print ('arrived sendRow_colour green')
     sendRow_color_toArduino(knitpat_green_VNB, "green")
 
+def sendRow_colour_green_blue():
+    #print ('arrived sendRow_colour green, blue')
+    sendRow_color_toArduino(knitpat_green_blue_VNB, "green_blue")
+
+def sendRow_colour_green_red():
+    #print ('arrived sendRow_colour green, red')
+    sendRow_color_toArduino(knitpat_green_red_VNB, "green_red")
+
+def sendRow_colour_green_blue_red():
+    #print ('arrived sendRow_colour green, blue, red')
+    sendRow_color_toArduino(knitpat_green_blue_red_VNB, "green_blue_red")
+
 def sendRow_colour_blue():
     #print ('arrived sendRow_colour blue')
     sendRow_color_toArduino(knitpat_blue_VNB, "blue")
 
-def sendRow_colour_blue_green():
-    sendRow_color_toArduino(knitpat_blg_VNB, 'blue_green')
+def sendRow_colour_blue_red():
+    #print ('arrived sendRow_colour blue, red')
+    sendRow_color_toArduino(knitpat_blue_red_VNB, "blue_red")
 
-def sendRow_colour_blue_green_black():
-    sendRow_color_toArduino(knitpat_blgb_VNB, 'blue_green_black')
+def sendRow_colour_red():
+    sendRow_color_toArduino(knitpat_red_VNB, "red")
 
 def send_emptyRow_VNB():
     #print('send emptyRow')
@@ -1548,26 +2132,100 @@ def send_rib01_VNB():
 # Dictionary functions HNB
 
 def sendRow_colour_black_HNB():
-    #print ('sending black HNB')
+    #print ('sending black')
     sendRow_color_toArduino_HNB(knitpat_black_HNB, "black")
 
+def sendRow_colour_black_white_HNB():
+    #print ('sending black, white')
+    sendRow_color_toArduino_HNB(knitpat_black_white_HNB, "black_white")
+
+def sendRow_colour_black_green_HNB():
+    #print ('sending black, green')
+    sendRow_color_toArduino_HNB(knitpat_black_green_HNB, "black_green")
+
+def sendRow_colour_black_blue_HNB():
+    #print ('sending black, blue')
+    sendRow_color_toArduino_HNB(knitpat_black_blue_HNB, "black_blue")
+
+def sendRow_colour_black_red_HNB():
+    #print ('sending black, red')
+    sendRow_color_toArduino_HNB(knitpat_black_red_HNB, "black_red")
+
+def sendRow_colour_black_white_green_HNB():
+    #print ('sending black, white, green')
+    sendRow_color_toArduino_HNB(knitpat_black_white_green_HNB, "black_white_green")
+
+def sendRow_colour_black_white_blue_HNB():
+    #print ('sending black, white, blue')
+    sendRow_color_toArduino_HNB(knitpat_black_white_blue_HNB, "black_white_blue")
+
+def sendRow_colour_black_white_red_HNB():
+    #print ('sending black, white, red')
+    sendRow_color_toArduino_HNB(knitpat_black_white_red_HNB, "black_white_red")
+
+def sendRow_colour_black_green_blue_HNB():
+    sendRow_color_toArduino_HNB(knitpat_black_green_blue_HNB, 'black_green_blue')
+
+def sendRow_colour_black_green_red_HNB():
+    sendRow_color_toArduino_HNB(knitpat_black_green_red_HNB, 'black_green_red')
+
+def sendRow_colour_black_blue_red_HNB():
+    sendRow_color_toArduino_HNB(knitpat_black_blue_red_HNB, 'black_blue_red')
+
 def sendRow_colour_white_HNB():
-    #print ('sending white HNB')
+    #print ('arrived sendRow_colour white')
     sendRow_color_toArduino_HNB(knitpat_white_HNB, "white")
 
+def sendRow_colour_white_green_HNB():
+    #print ('sending white, green')
+    sendRow_color_toArduino_HNB(knitpat_white_green_HNB, "white_green")
+
+def sendRow_colour_white_blue_HNB():
+    #print ('sending white, blue')
+    sendRow_color_toArduino_HNB(knitpat_white_blue_HNB, "white_blue")
+
+def sendRow_colour_white_red_HNB():
+    #print ('sending white, red')
+    sendRow_color_toArduino_HNB(knitpat_white_red_HNB, "white_red")
+
+def sendRow_colour_white_green_blue_HNB():
+    #print ('sending white, green, blue')
+    sendRow_color_toArduino_HNB(knitpat_white_green_blue_HNB, "white_green_blue")
+
+def sendRow_colour_white_green_red_HNB():
+    #print ('sending white, green, red')
+    sendRow_color_toArduino_HNB(knitpat_white_green_red_HNB, "white_green_red")
+
+def sendRow_colour_white_blue_red_HNB():
+    #print ('sending white, blue, red')
+    sendRow_color_toArduino_HNB(knitpat_white_blue_red_HNB, "white_blue_red")
+
 def sendRow_colour_green_HNB():
-    #print ('sending green HNB')
+    #print ('arrived sendRow_colour green')
     sendRow_color_toArduino_HNB(knitpat_green_HNB, "green")
 
+def sendRow_colour_green_blue_HNB():
+    #print ('arrived sendRow_colour green, blue')
+    sendRow_color_toArduino_HNB(knitpat_green_blue_HNB, "green_blue")
+
+def sendRow_colour_green_red_HNB():
+    #print ('arrived sendRow_colour green, red')
+    sendRow_color_toArduino_HNB(knitpat_green_red_HNB, "green_red")
+
+def sendRow_colour_green_blue_red_HNB():
+    #print ('arrived sendRow_colour green, blue, red')
+    sendRow_color_toArduino_HNB(knitpat_green_blue_red_HNB, "green_blue_red")
+
 def sendRow_colour_blue_HNB():
-    #print ('sending blue HNB')
+    #print ('arrived sendRow_colour blue')
     sendRow_color_toArduino_HNB(knitpat_blue_HNB, "blue")
 
-def sendRow_colour_blue_green_HNB():
-    sendRow_color_toArduino_HNB(knitpat_blg_HNB, 'blue_green')
+def sendRow_colour_blue_red_HNB():
+    #print ('arrived sendRow_colour blue, red')
+    sendRow_color_toArduino_HNB(knitpat_blue_red_HNB, "blue_red")
 
-def sendRow_colour_blue_green_black_HNB():
-    sendRow_color_toArduino_HNB(knitpat_blgb_HNB, 'blue_green_black')
+def sendRow_colour_red_HNB():
+    sendRow_color_toArduino_HNB(knitpat_red_HNB, "red")
 
 def send_emptyRow_HNB():
     #print('send emptyRow')
@@ -1585,16 +2243,57 @@ def send_rib10_HNB():
     
 
 # enum
-techSet = {'bV':sendRow_colour_black,'wV':sendRow_colour_white,
-           'gV':sendRow_colour_green, 'blV':sendRow_colour_blue,
-           'blgV':sendRow_colour_blue_green,
-           'blgbV':sendRow_colour_blue_green_black,
+techSet = {'bV':sendRow_colour_black,
+           'wV':sendRow_colour_white,
+           'gV':sendRow_colour_green,
+           'blV':sendRow_colour_blue,
+           'rV':sendRow_colour_red,
+           'bwV':sendRow_colour_black_white,
+           'bgV':sendRow_colour_black_green,
+           'bblV':sendRow_colour_black_blue,
+           'brV':sendRow_colour_black_red, 
+           'bwgV':sendRow_colour_black_white_green,
+           'bwblV':sendRow_colour_black_white_blue,
+           'bwrV':sendRow_colour_black_white_red,
+           'bgblV':sendRow_colour_black_green_blue,
+           'bgrV':sendRow_colour_black_green_red,
+           'bblrV':sendRow_colour_black_blue_red,
+           'wgV':sendRow_colour_white_green,
+           'wblV':sendRow_colour_white_blue,
+           'wrV':sendRow_colour_white_red,
+           'wgblV':sendRow_colour_white_green_blue,
+           'wgrV':sendRow_colour_white_green_red,
+           'wblrV':sendRow_colour_white_blue_red,
+           'gblV':sendRow_colour_green_blue,
+           'grV':sendRow_colour_green_red,
+           'gblrV':sendRow_colour_green_blue_red,
+           'blrV':sendRow_colour_blue_red, 
            'eV':send_emptyRow_VNB, 'nV':send_fullRow_VNB,
-           'rib10V':send_rib10_VNB, 'rib01V':send_rib01_VNB,
-           'bH':sendRow_colour_black_HNB, 'wH':sendRow_colour_white_HNB,
-           'gH':sendRow_colour_green_HNB,'blH':sendRow_colour_blue_HNB,
-           'blgH':sendRow_colour_blue_green_HNB,
-           'blgbH':sendRow_colour_blue_green_black_HNB,
+           'rib10V':send_rib10_VNB, 'rib01V':send_rib01_VNB,        
+           'bH':sendRow_colour_black_HNB,
+           'wH':sendRow_colour_white_HNB,
+           'gH':sendRow_colour_green_HNB,
+           'blH':sendRow_colour_blue_HNB,
+           'rH':sendRow_colour_red_HNB,
+           'bwH':sendRow_colour_black_white_HNB,
+           'bgH':sendRow_colour_black_green_HNB,
+           'bblH':sendRow_colour_black_blue_HNB,
+           'brH':sendRow_colour_black_red_HNB,
+           'bwgH':sendRow_colour_black_white_green_HNB,
+           'bwblH':sendRow_colour_black_white_blue_HNB,
+           'bwrH':sendRow_colour_black_white_red_HNB,
+           'bgblH':sendRow_colour_black_green_blue_HNB,
+           'bgrH':sendRow_colour_black_green_red_HNB,
+           'bblrH':sendRow_colour_black_blue_red_HNB,
+           'wgH':sendRow_colour_white_green_HNB,
+           'wblH':sendRow_colour_white_blue_HNB,
+           'wrH':sendRow_colour_white_red_HNB,
+           'wgblH':sendRow_colour_white_green_blue_HNB,
+           'wgrH':sendRow_colour_white_green_red_HNB,
+           'wblrH':sendRow_colour_white_blue_red_HNB,
+           'gblH':sendRow_colour_green_blue_HNB,
+           'grH':sendRow_colour_green_red_HNB,
+           'blrH':sendRow_colour_blue_red_HNB,
            'eH':send_emptyRow_HNB, 'nH':send_fullRow_HNB,
            'rib01H':send_rib01_HNB, 'rib10H':send_rib10_HNB,
            '0':send_none}
@@ -1614,6 +2313,9 @@ def show_height():
     pass
 
 def set_null_pos():
+
+    global flag_left
+    global flag_right
     
     connectionVNB.send("setNPos", 100)
 
@@ -1641,13 +2343,28 @@ def set_null_pos():
 
     print("HNV 0Pos: ", received)
 
-    sendData()
+    flag_left = 1
+    flag_right = 0
 
+    sendData()
+    
+    
+    
+    # for Test only
+#     sendRow_colour_black()
+#     sendRow_colour_black_HNB()
+#     send_emptyRow_VNB()
+#     send_fullRow_VNB()
+#     send_rib10_VNB()
+#     send_rib01_VNB()
     
 def set_dirChange_to_0():
     global directionChanged
     directionChanged = 0
     print("directionChanged: ", directionChanged)
+    get_needlePos_VNB()
+    get_needlePos_HNB()
+    
 
 def setLeftEnd_VNB(data):
     leftEnd_VNB = int(data) 
@@ -1714,7 +2431,7 @@ class App(QtWidgets.QMainWindow):
         if choice == QtWidgets.QMessageBox.Yes:
             print("Extracting Now")
             QtWidgets.QApplication.instance(self).quit
-            
+            QApplication.quit()
         else:
             pass
 
@@ -1784,12 +2501,15 @@ class MyTableWidget(QWidget):
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
         self.layout = QVBoxLayout(self)
+        
+        
 
         # Initialize tabWidget screen
         self.tabWidget = QtWidgets.QTabWidget()
         font = QFont()
         font.setPointSize(12)
         self.tabWidget.setFont(font)
+        
 
         self.tab1 = QtWidgets.QWidget(self)
         self.tab2 = QtWidgets.QWidget(self)
@@ -1797,10 +2517,12 @@ class MyTableWidget(QWidget):
 
         # Add tabs
         self.tabWidget.addTab(self.tab1, "Settings")
+        
         self.tabWidget.addTab(self.tab2, "Process")
 
         ########################################################################## Tab1 PushButton
-
+      
+        
         # SX brings the pusher in the right knitting position
         # Uneven numbers: Lock on the left hand side 
         # Even numbers: Lock on the right hand side
@@ -1816,6 +2538,7 @@ class MyTableWidget(QWidget):
                 elif directionChanged >= 1 and directionChanged % 2 == 1:
                     directionChanged -= 1
                     read_from_db(directionChanged)
+                print("SX_Row done", directionChanged)
                 
             except:
                 print("no dirChanged: ", directionChanged)
@@ -1879,24 +2602,23 @@ class MyTableWidget(QWidget):
             newSettings()
           
 
-
-
-
         # Add buttons
 
         # Number pad for all settings
         self.numPad = QtWidgets.QPushButton('NumbPad', self.tab1)
-        self.numPad.setStyleSheet("background-color:rgb(204,255,229)")
+        self.numPad.setStyleSheet("font: bold; background-color: Hsl(211,40%,100%); border: none;")
         self.numPad.setEnabled(True)
         self.numPad.setGeometry(QtCore.QRect(10, 20, 100, 60))
         self.numPad.clicked.connect(self.showdialog)
 
         self.nPos = QtWidgets.QPushButton('0Pos', self.tab1)
+        self.nPos.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
         self.nPos.setEnabled(True)
         self.nPos.setGeometry(QtCore.QRect(10, 90, 100, 60))
         self.nPos.clicked.connect(set_null_pos)
         
         self.emptyRowBtn = QtWidgets.QPushButton('EmptyRow', self.tab1)
+        self.emptyRowBtn.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
         self.emptyRowBtn.setEnabled(True)
         self.emptyRowBtn.setGeometry(QtCore.QRect(10, 160, 100, 60))
         self.emptyRowBtn.clicked.connect(send_emptyRow_toArduino)
@@ -1904,39 +2626,44 @@ class MyTableWidget(QWidget):
 
                 # Shows data, button
         self.showData = QtWidgets.QPushButton('Data', self.tab1)
+        self.showData.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
         self.showData.setEnabled(True)
         self.showData.setGeometry(QtCore.QRect(120, 20, 100, 60))
         self.showData.clicked.connect(newLabelText)
 
         # send data, button
         self.sendData = QtWidgets.QPushButton('SetEndP', self.tab1)
+        self.sendData.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
         self.sendData.setEnabled(True)
         self.sendData.setGeometry(QtCore.QRect(230, 90, 100, 60))
         self.sendData.clicked.connect(sendData)
 
         # send data, button
         self.sendData_VNB = QtWidgets.QPushButton('SetEnd_VNB', self.tab1)
+        self.sendData_VNB.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
         self.sendData_VNB.setEnabled(True)
         self.sendData_VNB.setGeometry(QtCore.QRect(230, 160, 100, 60))
         self.sendData_VNB.clicked.connect(sendData_VNB)
 
         # send data, button
         self.sendData_HNB = QtWidgets.QPushButton('SetEnd_HNB', self.tab1)
+        self.sendData_HNB.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
         self.sendData_HNB.setEnabled(True)
         self.sendData_HNB.setGeometry(QtCore.QRect(230, 230, 100, 60))
         self.sendData_HNB.clicked.connect(sendData_HNB)
 
         self.directionBtn = QtWidgets.QPushButton('DirC_0', self.tab1)
+        self.directionBtn.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
         self.directionBtn.setEnabled(True)
         self.directionBtn.setGeometry(QtCore.QRect(120, 90, 100, 60))
         self.directionBtn.clicked.connect(set_dirChange_to_0)        
 
-        # static settings
-        self.numPad_process = QtWidgets.QPushButton('SX Row', self.tab1)
-        self.numPad_process.setStyleSheet("background-color:rgb(204,255,229)")
-        self.numPad_process.setEnabled(True)
-        self.numPad_process.setGeometry(QtCore.QRect(230, 20, 100, 60))
-        self.numPad_process.clicked.connect(start_SX_Row)
+        # Titel stimmt nicht mehr _ static settings
+        self.sx_process = QtWidgets.QPushButton('SX Row', self.tab1)
+        self.sx_process.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
+        self.sx_process.setEnabled(True)
+        self.sx_process.setGeometry(QtCore.QRect(230, 20, 100, 60))
+        self.sx_process.clicked.connect(start_SX_Row)
 
 
         # Add labels
@@ -2005,18 +2732,11 @@ class MyTableWidget(QWidget):
         self.label_form.setBaseSize(QtCore.QSize(30, 20))
         self.label_form.show()
 
-        self.fontlab = QFont ('Arial Narrow bold', 14)
-        self.fontlab.setBold(False)
-
-        
-
         # Add labels Processing Data
         self.label_col = QLabel("Color", self.tab2)
         self.label_col.setGeometry(QtCore.QRect(130, 20, 220, 40))
         self.label_col.setBaseSize(QtCore.QSize(30, 20))
-        self.label_col.setFont(self.fontlab)
-        self.label_col.setStyleSheet("color:rgb(200,50,0)")
-        self.label_col.setStyleSheet("background-color:rgb(230,230,230)")
+        self.label_col.setStyleSheet("font:bold; background-color: Hsl(230,5%,90%); border: none;")
         self.label_col.show()
 
         self.label_tech_2 = QLabel("Tech", self.tab2)      
@@ -2047,17 +2767,13 @@ class MyTableWidget(QWidget):
         self.label_text = QLabel("Info Tech", self.tab2)
         self.label_text.setGeometry(QtCore.QRect(15, 250, 320, 40))
         self.label_text.setBaseSize(QtCore.QSize(30, 20))
-        self.label_text.setFont(self.fontlab)
-        self.label_text.setStyleSheet("color:rgb(200,50,0)")
-        self.label_text.setStyleSheet("background-color:rgb(230,230,230)")
+        self.label_text.setStyleSheet("font:bold; background-color: Hsl(230,5%,90%); border: none")
         self.label_text.show()
 
         self.label_textForm = QLabel("Info Form", self.tab2)
         self.label_textForm.setGeometry(QtCore.QRect(340, 250, 220, 40))
         self.label_textForm.setBaseSize(QtCore.QSize(30, 20))
-        self.label_textForm.setFont(self.fontlab)
-        self.label_textForm.setStyleSheet("color:rgb(200,50,0)")
-        self.label_textForm.setStyleSheet("background-color:rgb(200,230,230)")
+        self.label_textForm.setStyleSheet("font:bold; background-color: Hsl(230,5%,90%); border: none")
         self.label_textForm.show()
 
         ###
@@ -2093,35 +2809,31 @@ class MyTableWidget(QWidget):
         self.label_row_HNB_2.show()
 
 
-
-
-
-
         #======================== Tab 2
 
 
         # Number pad settings knit process
         self.numPad_process = QtWidgets.QPushButton('NumbPad', self.tab2)
-        self.numPad_process.setStyleSheet("background-color:rgb(204,255,229)")
+        self.numPad_process.setStyleSheet("font: bold; background-color: Hsl(211,40%,100%); border: none;")
         self.numPad_process.setEnabled(True)
         self.numPad_process.setGeometry(QtCore.QRect(10, 20, 100, 60))
         self.numPad_process.clicked.connect(self.showdialog)
 
         # Shows data, button
         self.showSettings = QtWidgets.QPushButton('Settings', self.tab2)
+        self.showSettings.setStyleSheet("font: bold; background-color: Hsl(230,5%,90%); border: none")
         self.showSettings.setEnabled(True)
         self.showSettings.setGeometry(QtCore.QRect(10, 90, 100, 60))
         self.showSettings.clicked.connect(newSettings)
 
-
-
-        
+      
         #==============================================
         
  
         # Wichtig, sonst funktioniert nichts mehr!!!! Add tabWidget to widget
-        self.layout.addWidget(self.tabWidget)
+        self.layout.addWidget(self.tabWidget)        
         self.setLayout(self.layout)
+
 
         global setPat_VNB
         global setPat_HNB
@@ -2129,59 +2841,147 @@ class MyTableWidget(QWidget):
         def setPat_VNB(data):
 
             global patNum_VNB
+
             global knitpat_black_VNB
             global knitpat_white_VNB
             global knitpat_green_VNB
             global knitpat_blue_VNB
-            global knitpat_blg_VNB
-            global knitpat_blgb_VNB
+            global knitpat_red_VNB
+        
+            global knitpat_black_white_VNB
+            global knitpat_black_green_VNB
+            global knitpat_black_blue_VNB
+            global knitpat_black_red_VNB
+
+            global knitpat_black_white_green_VNB
+            global knitpat_black_white_blue_VNB
+            global knitpat_black_white_red_VNB
+            
+            global knitpat_black_green_blue_VNB
+            global knitpat_black_green_red_VNB
+
+            global knitpat_black_blue_red_VNB
+
+            global knitpat_white_green_VNB
+            global knitpat_white_blue_VNB
+            global knitpat_white_red_VNB
+
+            global knitpat_white_green_blue_VNB
+            global knitpat_white_green_red_VNB
+
+            global knitpat_white_blue_red_VNB
+
+            global knitpat_green_blue_VNB
+            global knitpat_green_red_VNB
+            global knitpat_green_blue_red_VNB
+
+            global knitpat_blue_red_VNB
+        
+
+            global height_VNB
+
+            global len
 
             patNum_VNB = data
 
             temp_patNumb_VNB = str(patNum_VNB) + ".bmp"
-            file_name_pat_VNB = ("/home/pi/PyIrene/ProgrammCode/Pat/" + temp_patNumb_VNB)
+            file_name_pat_VNB = ("/home/pi/Passap/Pat/" + temp_patNumb_VNB)
 
             try:
-                (knitpat_black_VNB,knitpat_white_VNB,knitpat_green_VNB,knitpat_blue_VNB,
-                 knitpat_blg_VNB, knitpat_blgb_VNB) = get_pattern(file_name_pat_VNB)
-            
-                global height_VNB
+                (knitpat_black_VNB, knitpat_white_VNB, knitpat_green_VNB,
+                 knitpat_blue_VNB, knitpat_red_VNB,
+                 knitpat_black_white_VNB, knitpat_black_green_VNB,
+                 knitpat_black_blue_VNB, knitpat_black_red_VNB,
+                 knitpat_black_white_green_VNB, knitpat_black_white_blue_VNB,
+                 knitpat_black_white_red_VNB,
+                 knitpat_black_green_blue_VNB, knitpat_black_green_red_VNB,
+                 knitpat_black_blue_red_VNB, 
+                 knitpat_white_green_VNB, knitpat_white_blue_VNB, knitpat_white_red_VNB,
+                 knitpat_white_green_blue_VNB, knitpat_white_green_red_VNB,
+                 knitpat_white_blue_red_VNB,
+                 knitpat_green_blue_VNB, knitpat_green_red_VNB, knitpat_green_blue_red_VNB,
+                 knitpat_blue_red_VNB) = get_pattern(file_name_pat_VNB)          
+                
                 height_VNB = len(knitpat_black_VNB)
                 print("height VNB: ", height_VNB)
                 print("pat_VNB is: " + patNum_VNB)
 
             except IOError:
                 print("no such pattern number")
-                self.errorDialog("! No such pattern number: " + patNum_VNB) 
+                self.errorDialog("! No such pattern number: " + patNum_VNB)
+                numb = ""
 
 
         def setPat_HNB(data):
 
             global patNum_HNB
+
             global knitpat_black_HNB
             global knitpat_white_HNB
             global knitpat_green_HNB
             global knitpat_blue_HNB
-            global knitpat_blg_HNB
-            global knitpat_blgb_HNB
+            global knitpat_red_HNB
+
+            global knitpat_black_white_HNB
+            global knitpat_black_green_HNB
+            global knitpat_black_blue_HNB
+            global knitpat_black_red_HNB
+
+            global knitpat_black_white_green_HNB
+            global knitpat_black_white_blue_HNB
+            global knitpat_black_white_red_HNB
+            
+            global knitpat_black_green_blue_HNB
+            global knitpat_black_green_red_HNB
+
+            global knitpat_black_blue_red_HNB
+
+            global knitpat_white_green_HNB
+            global knitpat_white_blue_HNB
+            global knitpat_white_red_HNB
+
+            global knitpat_white_green_blue_HNB
+            global knitpat_white_green_red_HNB
+
+            global knitpat_white_blue_red_HNB
+
+            global knitpat_green_blue_HNB
+            global knitpat_green_red_HNB
+            global knitpat_green_blue_red_HNB
+
+            global knitpat_blue_red_HNB
+
+            global height_HNB
+
 
             patNum_HNB = data
 
             temp_patNumb_HNB = str(patNum_HNB) + ".bmp"
-            file_name_pat_HNB = ("/home/pi/PyIrene/ProgrammCode/Pat/" + temp_patNumb_HNB)
+            file_name_pat_HNB = ("/home/pi/Passap/Pat/" + temp_patNumb_HNB)
 
             try:
-                (knitpat_black_HNB, knitpat_white_HNB, knitpat_green_HNB, knitpat_blue_HNB,
-                 knitpat_blg_HNB, knitpat_blgb_HNB) = get_pattern(file_name_pat_HNB)
+                (knitpat_black_HNB, knitpat_white_HNB, knitpat_green_HNB,
+                 knitpat_blue_HNB, knitpat_red_HNB,
+                 knitpat_black_white_HNB, knitpat_black_green_HNB,
+                 knitpat_black_blue_HNB, knitpat_black_red_HNB,
+                 knitpat_black_white_green_HNB, knitpat_black_white_blue_HNB,
+                 knitpat_black_white_red_HNB,
+                 knitpat_black_green_blue_HNB, knitpat_black_green_red_HNB,
+                 knitpat_black_blue_red_HNB, 
+                 knitpat_white_green_HNB, knitpat_white_blue_HNB, knitpat_white_red_HNB,
+                 knitpat_white_green_blue_HNB, knitpat_white_green_red_HNB,
+                 knitpat_white_blue_red_HNB,
+                 knitpat_green_blue_HNB, knitpat_green_red_HNB, knitpat_green_blue_red_HNB,
+                 knitpat_blue_red_HNB) = get_pattern(file_name_pat_HNB)
 
-                global height_HNB
                 height_HNB = len(knitpat_black_HNB)
                 print("height HNB: ", height_HNB)
                 print("pat_HNB is: " + patNum_HNB)
 
             except IOError:
                 print("no such pattern number")
-                self.errorDialog("! No such pattern number: " + patNum_VNB)
+                self.errorDialog("! No such pattern number: " + patNum_HNB)
+                numb = ""
 
 
     def getNumX(self):
@@ -2339,7 +3139,7 @@ class MyTableWidget(QWidget):
         if msg == "Dir":
             dirChange = numb
             read_from_db(dirChange)
-            directionChanged = dirChange
+            directionChanged = int(dirChange)
             print("directionChanged is: " + dirChange)
             numb = ""
 
@@ -2387,6 +3187,7 @@ class MyTableWidget(QWidget):
 
             except IOError:
                 self.errorDialog("! No such tech number: " + tech)
+                numb = ""
 
         if msg == "cTec":
             countTech = int(numb)
@@ -2419,6 +3220,7 @@ class MyTableWidget(QWidget):
                 numb = ""
             except IOError:
                 self.errorDialog("! No such form number: " + form)
+                numb = ""
 
         if msg == "formC":
             rowCountForm = int(numb)
@@ -2441,17 +3243,12 @@ class MyTableWidget(QWidget):
 
     def errorDialog(self, data):
 
-##      print("reached")
-        
-        d = QDialog()
-
-        self.layout2=QGridLayout(self)
-
-        def doneAll(self):
-            d.destroy()
-     
+#      print("reached")
+            
+        d = QDialog(self)
+   
         self.error = QtWidgets.QPushButton("&"+data, d)
-        self.error.setStyleSheet("background-color:rgb(255,125,50)")
+        self.error.setStyleSheet("background-color: Hsl(10,70%,70%); border: none")
         self.error.setEnabled(True)
         
 
@@ -2461,22 +3258,24 @@ class MyTableWidget(QWidget):
         self.error.setFixedHeight(150)
         self.error.setFixedWidth(400)
 
-        self.error.clicked.connect(doneAll)
+        #self.error.clicked.connect(doneAll_errD)
+        self.error.clicked.connect(lambda: d.done(2))
 
-        self.layout2.addWidget(self.error, 0, 0)
+        #self.layout2.addWidget(self.error, 0, 0)
 
-        d.setLayout(self.layout2)        
+        #d.setLayout(self.layout2)        
         d.setWindowTitle("Error message")
         d.exec_()
-
+        
 
     def showdialog(self):
 
         #print("first step")
 
-        d = QDialog()
+        d2 = QDialog()
 
-        self.layout2 = QGridLayout(self)
+        self.layout3 = QGridLayout()
+        
 
         #print("second step")
 
@@ -2486,49 +3285,60 @@ class MyTableWidget(QWidget):
 
         def doneAll(self):
             resetNumb()
-            d.destroy()
+            d2.done(2)
 
-        self.b1 = QtWidgets.QPushButton("1", d)
-        self.b2 = QtWidgets.QPushButton("2", d)
-        self.b3 = QtWidgets.QPushButton("3", d)
-        self.b4 = QtWidgets.QPushButton("4", d)
-        self.b5 = QtWidgets.QPushButton("5", d)
-        self.b6 = QtWidgets.QPushButton("6", d)
-        self.b7 = QtWidgets.QPushButton("7", d)
-        self.b8 = QtWidgets.QPushButton("8", d)
-        self.b9 = QtWidgets.QPushButton("9", d)
-        self.b0 = QtWidgets.QPushButton("0", d)
+        self.b1 = QtWidgets.QPushButton("1", d2)
+        self.b2 = QtWidgets.QPushButton("2", d2)
+        self.b3 = QtWidgets.QPushButton("3", d2)
+        self.b4 = QtWidgets.QPushButton("4", d2)
+        self.b5 = QtWidgets.QPushButton("5", d2)
+        self.b6 = QtWidgets.QPushButton("6", d2)
+        self.b7 = QtWidgets.QPushButton("7", d2)
+        self.b8 = QtWidgets.QPushButton("8", d2)
+        self.b9 = QtWidgets.QPushButton("9", d2)
+        self.b0 = QtWidgets.QPushButton("0", d2)
+        
+        self.b1.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
+        self.b2.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
+        self.b3.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
+        self.b4.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
+        self.b5.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
+        self.b6.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
+        self.b7.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
+        self.b8.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
+        self.b9.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
+        self.b0.setStyleSheet("background-color: Hsl(230,3%,90%); border: none")
 
-        self.leEnd = QtWidgets.QPushButton("LeE", d)
-        self.leEnd.setStyleSheet("background-color:rgb(0,155,155)")
-        self.riEnd = QtWidgets.QPushButton("RiE", d)
-        self.riEnd.setStyleSheet("background-color:rgb(0,155,155)")        
-        self.rowBack_VNB = QtWidgets.QPushButton("RowV", d)
-        self.rowBack_VNB.setStyleSheet("background-color:rgb(127,127,127)")
-        self.rowBack_HNB = QtWidgets.QPushButton("RowH", d)
-        self.rowBack_HNB.setStyleSheet("background-color:rgb(127,127,127)")
-        self.direction = QtWidgets.QPushButton("Dir", d)
-        self.direction.setStyleSheet("background-color:rgb(127,127,127)")
-        self.pattern_VNB = QtWidgets.QPushButton("PatV", d)
-        self.pattern_VNB.setStyleSheet("background-color:rgb(0,155,155)")        
-        self.pattern_HNB = QtWidgets.QPushButton("PatH", d)
-        self.pattern_HNB.setStyleSheet("background-color:rgb(0,155,155)")
-        self.MG_VNB = QtWidgets.QPushButton("MgV", d)
-        self.MG_VNB.setStyleSheet("background-color:rgb(0,155,105)")        
-        self.MG_HNB = QtWidgets.QPushButton("MgH", d)
-        self.MG_HNB.setStyleSheet("background-color:rgb(0,155,105)")    
-        self.tech = QtWidgets.QPushButton("Tech", d)
-        self.tech.setStyleSheet("background-color:rgb(255,190,0)")
-        self.countTech = QtWidgets.QPushButton("cTec", d)
-        self.countTech.setStyleSheet("background-color:rgb(255,255,200)")
-        self.bQuit = QtWidgets.QPushButton("Quit", d)
-        self.bQuit.setStyleSheet("background-color:rgb(180,0,0)")
-        self.form = QtWidgets.QPushButton("Form", d)
-        self.form.setStyleSheet("background-color:rgb(255,100,0)")
-        self.formLine = QtWidgets.QPushButton("fLine", d)
-        self.formLine.setStyleSheet("background-color:rgb(255,200,150)")
-        self.formCounter = QtWidgets.QPushButton("formC", d)
-        self.formCounter.setStyleSheet("background-color:rgb(255,230,200)")
+        self.leEnd = QtWidgets.QPushButton("LeE", d2)
+        self.leEnd.setStyleSheet("background-color: Hsl(120,30%,90%); border: none")
+        self.riEnd = QtWidgets.QPushButton("RiE", d2)
+        self.riEnd.setStyleSheet("background-color: Hsl(120,30%,90%); border: none")        
+        self.rowBack_VNB = QtWidgets.QPushButton("RowV", d2)
+        self.rowBack_VNB.setStyleSheet("background-color: Hsl(211,30%,70%); border: none")
+        self.rowBack_HNB = QtWidgets.QPushButton("RowH", d2)
+        self.rowBack_HNB.setStyleSheet("background-color: Hsl(211,30%,70%); border: none")
+        self.direction = QtWidgets.QPushButton("Dir", d2)
+        self.direction.setStyleSheet("background-color: Hsl(190,10%,80%); border: none")
+        self.pattern_VNB = QtWidgets.QPushButton("PatV", d2)
+        self.pattern_VNB.setStyleSheet("background-color: Hsl(211,70%,90%); border: none")        
+        self.pattern_HNB = QtWidgets.QPushButton("PatH", d2)
+        self.pattern_HNB.setStyleSheet("background-color: Hsl(211,70%,90%); border: none")
+        self.MG_VNB = QtWidgets.QPushButton("MgV", d2)
+        self.MG_VNB.setStyleSheet("background-color: Hsl(120,20%,70%); border: none")        
+        self.MG_HNB = QtWidgets.QPushButton("MgH", d2)
+        self.MG_HNB.setStyleSheet("background-color: Hsl(120,20%,70%); border: none")    
+        self.tech = QtWidgets.QPushButton("Tech", d2)
+        self.tech.setStyleSheet("background-color: Hsl(260,30%,70%); border: none")
+        self.countTech = QtWidgets.QPushButton("cTec", d2)
+        self.countTech.setStyleSheet("background-color: Hsl(260,15%,80%); border: none")
+        self.bQuit = QtWidgets.QPushButton("Quit", d2)
+        self.bQuit.setStyleSheet("background-color: Hsl(10,70%,70%); border: none")
+        self.form = QtWidgets.QPushButton("Form", d2)
+        self.form.setStyleSheet("background-color: Hsl(30,60%,70%); border: none")
+        self.formLine = QtWidgets.QPushButton("fLine", d2)
+        self.formLine.setStyleSheet("background-color: Hsl(30,50%,80%); border: none")
+        self.formCounter = QtWidgets.QPushButton("formC", d2)
+        self.formCounter.setStyleSheet("background-color: Hsl(30,40%,95%); border: none")
 
 
         nums = [self.b1, self.b2, self.b3, self.b4, self.b5, self.b6, self.b7, self.b8, self.b9, self.b0]
@@ -2568,45 +3378,47 @@ class MyTableWidget(QWidget):
         self.formCounter.clicked.connect(self.setNumb)
 
 
-        self.layout2.addWidget(self.b1, 0, 1)
-        self.layout2.addWidget(self.b2, 0, 2)
-        self.layout2.addWidget(self.b3, 0, 3)
-        self.layout2.addWidget(self.b4, 1, 1)
-        self.layout2.addWidget(self.b5, 1, 2)
-        self.layout2.addWidget(self.b6, 1, 3)
-        self.layout2.addWidget(self.b7, 2, 1)
-        self.layout2.addWidget(self.b8, 2, 2)
-        self.layout2.addWidget(self.b9, 2, 3)
-        self.layout2.addWidget(self.b0, 3, 2)
+        self.layout3.addWidget(self.b1, 0, 1)
+        self.layout3.addWidget(self.b2, 0, 2)
+        self.layout3.addWidget(self.b3, 0, 3)
+        self.layout3.addWidget(self.b4, 1, 1)
+        self.layout3.addWidget(self.b5, 1, 2)
+        self.layout3.addWidget(self.b6, 1, 3)
+        self.layout3.addWidget(self.b7, 2, 1)
+        self.layout3.addWidget(self.b8, 2, 2)
+        self.layout3.addWidget(self.b9, 2, 3)
+        self.layout3.addWidget(self.b0, 3, 2)
 
-        self.layout2.addWidget(self.pattern_VNB, 0, 0)
-        self.layout2.addWidget(self.pattern_HNB, 0, 4)
+        self.layout3.addWidget(self.pattern_VNB, 0, 0)
+        self.layout3.addWidget(self.pattern_HNB, 0, 4)
 
-        self.layout2.addWidget(self.rowBack_VNB, 0, 5)
-        self.layout2.addWidget(self.rowBack_HNB, 0, 6)
+        self.layout3.addWidget(self.rowBack_VNB, 0, 5)
+        self.layout3.addWidget(self.rowBack_HNB, 0, 6)
         
-        self.layout2.addWidget(self.leEnd, 1, 0)      
-        self.layout2.addWidget(self.riEnd, 1, 4)    
+        self.layout3.addWidget(self.leEnd, 1, 0)      
+        self.layout3.addWidget(self.riEnd, 1, 4)    
         
-        self.layout2.addWidget(self.direction, 1, 6)
+        self.layout3.addWidget(self.direction, 1, 6)
 
-        self.layout2.addWidget(self.MG_VNB, 2, 0)
-        self.layout2.addWidget(self.MG_HNB, 2, 4)
+        self.layout3.addWidget(self.MG_VNB, 2, 0)
+        self.layout3.addWidget(self.MG_HNB, 2, 4)
 
-        self.layout2.addWidget(self.tech, 3, 1)
-        self.layout2.addWidget(self.countTech, 3, 0)
+        self.layout3.addWidget(self.tech, 3, 1)
+        self.layout3.addWidget(self.countTech, 3, 0)
 
-        self.layout2.addWidget(self.bQuit, 3, 6)
+        self.layout3.addWidget(self.bQuit, 3, 6)
 
-        self.layout2.addWidget(self.form, 3, 3)        
-        self.layout2.addWidget(self.formLine, 3, 4)
-        self.layout2.addWidget(self.formCounter, 3, 5)
+        self.layout3.addWidget(self.form, 3, 3)        
+        self.layout3.addWidget(self.formLine, 3, 4)
+        self.layout3.addWidget(self.formCounter, 3, 5)
+        
+        
+        d2.setLayout(self.layout3)
+        d2.setWindowTitle("NumPad")
+        d2.exec_()
+        
+    
 
-
-
-        d.setLayout(self.layout2)
-        d.setWindowTitle("NumPad")
-        d.exec_()
 
 
 #======================================================================
