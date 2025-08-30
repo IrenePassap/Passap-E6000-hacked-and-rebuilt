@@ -1,3 +1,5 @@
+New version of all programs will be uploaded soon
+
 # Passap E 6000 Console, Reverse-Engineering
 # Passap Electra 4600: Motor and controller rebuilt
 
