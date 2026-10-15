@@ -1,20 +1,16 @@
-""" 9.7.24: DB Fehler korrigiert, Einzug war nicht korrekt. Jetzt funktioniert alles tiptop
+""" Änderung 9.7.24: DB Fehler korrigiert, Einzug war nicht korrekt. Jetzt funktioniert alles tiptop
 
-    29.4.24: Reihenfolge col und row_end_stopp geändert: Code Zeile 1766
+    Änderung 29.4.24: Reihenfolge col und row_end_stopp geändert: Code Zeile 1766
 
-    Neue Version 20.8.23: Alles portiert auf Raspberry pi 4:
-    Ich habe den Code überarbeitet
-    Ich habe keine Arduino IDE installiert. Bewusst nicht. Hatte Probleme. Es gibt eine neue IDE 2.0 für 64bit.
-    Vorläufig brauche ich keine Arduino IDE, da der Code auf den Arduinos problemlos läuft. So hoffe ich.
-    Nach der Reise werde ich die Kommunikation überarbeiten.
+    Änderung 20.8.23: Alles portiert auf Raspberry pi 4 und Code überarbeitet
 
-    Information: Siehe Arduino VNB
-    neue Version 14.7.22: Habe Zeile geändert:
+    Änderung 14.7.22: Habe Zeile geändert:
     if Var.col_change == 0 and Var.needle_pos_vnb ≤ (int(Var.right_end_data_vnb)-15) and Var.flag_right == 1:
     auf: if Var.col_change == 0 and Var.needle_pos_vnb ≤ (int(Var.right_end_data_vnb)-5) and Var.flag_right == 1:
     Warum: Wenn right end < 15, dann fährt der Schlitten nicht in den Farbwechsler
-    neue Version 13.5.23: Habe DB geändert.
-    Es gab Probleme beim Kreieren eines neuen DB Files. Die Routine hat die exception nicht ausgeführt.
+    
+    Änderung 13.5.23: Habe DB geändert.
+    Es gab Probleme beim Kreieren eines neuen DB Files. Die Routine hat die Exception nicht ausgeführt.
     Daher musste ich den Code anpassen "exception as e": Jetzt funktioniert die Routine.
     Wenn ein neues DB File erzeugt wird, wird eine exception geworfen (value = NULL).
     Eine Message Box informiert. Auf Bestätigung wird die Exception ausgeführt: return tab_ID = 0
